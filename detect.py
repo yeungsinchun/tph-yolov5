@@ -144,7 +144,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     for path, img, im0s, vid_cap, s in dataset:
         t1 = time_sync()
         if onnx:
-            img = img.astype('float32')
+            img = img.astype('np.float32')
         else:
             img = torch.from_numpy(img).to(device)
             img = img.half() if half else img.float()  # uint8 to fp16/32

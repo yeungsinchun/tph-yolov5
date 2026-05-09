@@ -90,7 +90,7 @@ def kmean_anchors(dataset='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen
         return x, x.max(1)[0]  # x, best_x
 
     def anchor_fitness(k):  # mutation fitness
-        _, best = metric(torch.tensor(k, dtype=torch.float32), wh)
+        _, best = metric(torch.tensor(k, dtype=torch.np.float32), wh)
         return (best * (best > thr).float()).mean()  # fitness
 
     def print_results(k):
@@ -127,8 +127,8 @@ def kmean_anchors(dataset='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen
     k, dist = kmeans(wh / s, n, iter=30)  # points, mean distance
     assert len(k) == n, f'{prefix}ERROR: scipy.cluster.vq.kmeans requested {n} points but returned only {len(k)}'
     k *= s
-    wh = torch.tensor(wh, dtype=torch.float32)  # filtered
-    wh0 = torch.tensor(wh0, dtype=torch.float32)  # unfiltered
+    wh = torch.tensor(wh, dtype=torch.np.float32)  # filtered
+    wh0 = torch.tensor(wh0, dtype=torch.np.float32)  # unfiltered
     k = print_results(k)
 
     # Plot

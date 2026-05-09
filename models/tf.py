@@ -200,13 +200,13 @@ class TFSPPF(keras.layers.Layer):
 class TFDetect(keras.layers.Layer):
     def __init__(self, nc=80, anchors=(), ch=(), imgsz=(640, 640), w=None):  # detection layer
         super().__init__()
-        self.stride = tf.convert_to_tensor(w.stride.numpy(), dtype=tf.float32)
+        self.stride = tf.convert_to_tensor(w.stride.numpy(), dtype=tf.np.float32)
         self.nc = nc  # number of classes
         self.no = nc + 5  # number of outputs per anchor
         self.nl = len(anchors)  # number of detection layers
         self.na = len(anchors[0]) // 2  # number of anchors
         self.grid = [tf.zeros(1)] * self.nl  # init grid
-        self.anchors = tf.convert_to_tensor(w.anchors.numpy(), dtype=tf.float32)
+        self.anchors = tf.convert_to_tensor(w.anchors.numpy(), dtype=tf.np.float32)
         self.anchor_grid = tf.reshape(self.anchors * tf.reshape(self.stride, [self.nl, 1, 1]),
                                       [self.nl, 1, -1, 1, 2])
         self.m = [TFConv2d(x, self.no * self.na, 1, w=w.m[i]) for i, x in enumerate(ch)]
@@ -230,8 +230,8 @@ class TFDetect(keras.layers.Layer):
                 xy = (y[..., 0:2] * 2 - 0.5 + self.grid[i]) * self.stride[i]  # xy
                 wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]
                 # Normalize xywh to 0-1 to reduce calibration error
-                xy /= tf.constant([[self.imgsz[1], self.imgsz[0]]], dtype=tf.float32)
-                wh /= tf.constant([[self.imgsz[1], self.imgsz[0]]], dtype=tf.float32)
+                xy /= tf.constant([[self.imgsz[1], self.imgsz[0]]], dtype=tf.np.float32)
+                wh /= tf.constant([[self.imgsz[1], self.imgsz[0]]], dtype=tf.np.float32)
                 y = tf.concat([xy, wh, y[..., 4:]], -1)
                 z.append(tf.reshape(y, [-1, 3 * ny * nx, self.no]))
 
@@ -242,7 +242,7 @@ class TFDetect(keras.layers.Layer):
         # yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         # return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
         xv, yv = tf.meshgrid(tf.range(nx), tf.range(ny))
-        return tf.cast(tf.reshape(tf.stack([xv, yv], 2), [1, 1, ny * nx, 2]), dtype=tf.float32)
+        return tf.cast(tf.reshape(tf.stack([xv, yv], 2), [1, 1, ny * nx, 2]), dtype=tf.np.float32)
 
 
 class TFUpsample(keras.layers.Layer):
@@ -368,7 +368,7 @@ class TFModel:
         # x = x[0][0]  # [x(1,6300,85), ...] to x(6300,85)
         # xywh = x[..., :4]  # x(6300,4) boxes
         # conf = x[..., 4:5]  # x(6300,1) confidences
-        # cls = tf.reshape(tf.cast(tf.argmax(x[..., 5:], axis=1), tf.float32), (-1, 1))  # x(6300,1)  classes
+        # cls = tf.reshape(tf.cast(tf.argmax(x[..., 5:], axis=1), tf.np.float32), (-1, 1))  # x(6300,1)  classes
         # return tf.concat([conf, cls, xywh], 1)
 
     @staticmethod
@@ -383,13 +383,13 @@ class AgnosticNMS(keras.layers.Layer):
     def call(self, input, topk_all, iou_thres, conf_thres):
         # wrap map_fn to avoid TypeSpec related error https://stackoverflow.com/a/65809989/3036450
         return tf.map_fn(lambda x: self._nms(x, topk_all, iou_thres, conf_thres), input,
-                         fn_output_signature=(tf.float32, tf.float32, tf.float32, tf.int32),
+                         fn_output_signature=(tf.np.float32, tf.np.float32, tf.np.float32, tf.np.int32),
                          name='agnostic_nms')
 
     @staticmethod
     def _nms(x, topk_all=100, iou_thres=0.45, conf_thres=0.25):  # agnostic NMS
         boxes, classes, scores = x
-        class_inds = tf.cast(tf.argmax(classes, axis=-1), tf.float32)
+        class_inds = tf.cast(tf.argmax(classes, axis=-1), tf.np.float32)
         scores_inp = tf.reduce_max(scores, -1)
         selected_inds = tf.image.non_max_suppression(
             boxes, scores_inp, max_output_size=topk_all, iou_threshold=iou_thres, score_threshold=conf_thres)
